@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Move Div with Mouse</title>
+    <style>
+        body {
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        .state {
+            position: absolute;
+            display: flex;
+            width: 50px;
+            height: 50px;
+            background-color: rgb(253, 255, 120);
+            border: 2px solid black;
+            border-radius: 50%;
+            pointer-events: none;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+    <script>
+        class STATE {
+            constructor(name, pos_x, pos_y) {
+                this.name = name;
+                this.pos_x = pos_x;
+                this.pos_y = pos_y;
+                this.goto = [];
+            }
+        }
+
+        let stateID = 0;
+
+        let states = [];
+
+        let render = false;
+
+        let create_cooldown = true;
+
+        const canvas = document.getElementById("canvas");
+
+        function renderStates(){
+            if(render)
+            {
+                for (let i = 0; i < states.length; i++) {
+                    let div = document.getElementById(states[i].name);
+                    if(div != null)
+                    {
+                        div.style.left = states[i].pos_x + 'px';
+                        div.style.top = states[i].pos_y + 'px';
+                        console.log(div.style.Left,div.style.Top);
+                    }
+                }
+            }
+        }
+
+        document.addEventListener('mousedown', (event) => {
+            render = true;
+            if(create_cooldown)
+            {
+                create_cooldown = false;
+                const new_state = new STATE("q"+stateID, event.clientX - 25, event.clientY - 25);
+                let new_div = document.createElement("div");
+                new_div.className = "state";
+                new_div.id = new_state.name;
+                new_div.innerText = new_state.name;
+                document.body.appendChild(new_div);
+                new_div.style.Left = new_state.pos_x + 'px';
+                new_div.style.Top = new_state.pos_y + 'px';
+                stateID += 1;
+                states.push(new_state);
+                console.log(states);
+            }
+            renderStates();
+            setTimeout(create_cooldown = true, 1000);
+        });
+
+        document.addEventListener('mouseup', (event) => {
+            renderStates();
+            render = false;
+        });
+
+        document.addEventListener('mousemove', (event) => {
+            renderStates();
+        });
+    </script>
+</head>
+<body>
+
+</body>
+</html>
