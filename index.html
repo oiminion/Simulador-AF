@@ -10,6 +10,7 @@
             margin: 0;
             overflow: hidden;
         }
+        
         .state {
             position: absolute;
             display: flex;
@@ -21,6 +22,10 @@
             pointer-events: none;
             justify-content: center;
             align-items: center;
+        }
+
+        .botao {
+            width: 100px;
         }
     </style>
     <script>
@@ -41,55 +46,157 @@
 
         let create_cooldown = true;
 
-        const canvas = document.getElementById("canvas");
+        let mode = 0;//0 = select, 1 = create, 2 = connect, 3 = remove 
+
+        let holding = null;
+
+        let disable_mouse = false;
+
+        function getStateById(id)
+        {
+            for (let i = 0; i < states.length; i++) 
+            {
+                if(states[i].name === id)
+                {
+                    return states[i];
+                }
+            }
+            return null;
+        }
 
         function renderStates(){
             if(render)
             {
-                for (let i = 0; i < states.length; i++) {
+                for (let i = 0; i < states.length; i++) 
+                {
                     let div = document.getElementById(states[i].name);
                     if(div != null)
                     {
                         div.style.left = states[i].pos_x + 'px';
                         div.style.top = states[i].pos_y + 'px';
-                        console.log(div.style.Left,div.style.Top);
+                        console.log(div.id,div.style.Left,div.style.Top);
                     }
                 }
             }
         }
+        document.addEventListener('DOMContentLoaded', function() {
 
-        document.addEventListener('mousedown', (event) => {
-            render = true;
-            if(create_cooldown)
+            const input_area = document.getElementById("input_area");
+
+            document.addEventListener('mousedown', (event) => {
+                render = true;
+                if(event.button === 0 && disable_mouse != true)
+                {
+                    if(create_cooldown && mode == 1)
+                    {
+                        create_cooldown = false;
+
+                        const new_state = new STATE("q"+stateID, event.clientX - 25, event.clientY - 25);
+
+                        const new_div = document.createElement("div");
+                        new_div.className = "state";
+                        new_div.id = new_state.name;
+                        new_div.innerText = new_state.name;
+                        document.body.appendChild(new_div);
+                        new_div.style.Left = new_state.pos_x + 'px';
+                        new_div.style.Top = new_state.pos_y + 'px';
+
+                        stateID += 1;
+                        states.push(new_state);
+                        console.log(states);
+                    }
+                    else if(mode == 0)
+                    {
+                        const selected = checkColision(event.clientX, event.clientY);
+                        if(selected != null)
+                        {
+                            const div = document.getElementById(selected.name);
+                            div.style.backgroundColor = 'rgb(0, 255, 0)';
+                        }
+                    }
+                }
+                
+                renderStates();
+                setTimeout(create_cooldown = true, 1000);
+            });
+
+            document.addEventListener('mouseup', (event) => {
+                renderStates();
+                render = false;
+            });
+
+            document.addEventListener('mousemove', (event) => {
+                renderStates();
+            });
+
+            input_area.addEventListener('mouseover', (event) => {
+                disable_mouse = true;
+            });
+
+            input_area.addEventListener('mouseout', (event) => {
+                disable_mouse = false;
+            });
+        });
+
+        function selectMode()
+        {
+            mode = 0;
+        }
+
+        function createMode()
+        {
+            mode = 1;
+        }
+        
+        function connectMode()
+        {
+            mode = 2;
+        }
+
+        function removeMode()
+        {
+            mode = 3;
+        }
+
+        function calcDistance(x1, y1, x2, y2)
+        {
+            const dx = x1 - x2;
+            const dy = y1 - y2;
+            return Math.sqrt(dx*dx + dy*dy);
+        }
+
+        function checkColision(x, y)
+        {
+            alert(x);
+            alert(y);
+            let selected_state = null;
+            for (let i = 0; i < states.length; i++)
             {
-                create_cooldown = false;
-                const new_state = new STATE("q"+stateID, event.clientX - 25, event.clientY - 25);
-                let new_div = document.createElement("div");
-                new_div.className = "state";
-                new_div.id = new_state.name;
-                new_div.innerText = new_state.name;
-                document.body.appendChild(new_div);
-                new_div.style.Left = new_state.pos_x + 'px';
-                new_div.style.Top = new_state.pos_y + 'px';
-                stateID += 1;
-                states.push(new_state);
-                console.log(states);
+                const dist = calcDistance(states[i].pos_x, states[i].pos_y, x, y);
+                if(dist <= 25)
+                {
+                    alert("AAA");
+                    if(selected_state == null)
+                    {
+                        selected_state = states[i];
+                    }
+                    else if(dist < calcDistance(selected_state.pos_x, selected_state.pos_y, x, y))
+                    {
+                        selected_state = states[i];
+                    }
+                }
             }
-            renderStates();
-            setTimeout(create_cooldown = true, 1000);
-        });
-
-        document.addEventListener('mouseup', (event) => {
-            renderStates();
-            render = false;
-        });
-
-        document.addEventListener('mousemove', (event) => {
-            renderStates();
-        });
+            alert(selected_state);
+            return selected_state;
+        }
     </script>
 </head>
 <body>
-
+    <div id="input_area">
+        <button class="botao" type="button" onclick="selectMode()" >Selecionar</button>
+        <button class="botao" type="button" onclick="createMode()" >Criar</button>
+        <button class="botao" type="button" onclick="connectMode()" >Conectar</button>
+        <button class="botao" type="button" onclick="removeMode()" >Remover</button>
+    </div>
 </body>
 </html>
