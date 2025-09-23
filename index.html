@@ -16,7 +16,7 @@
             display: flex;
             width: 50px;
             height: 50px;
-            background-color: rgb(253, 255, 120);
+            background-color: rgb(255, 255, 120);
             border-radius: 50%;
             pointer-events: none;
             justify-content: center;
@@ -71,6 +71,8 @@
 
         let correct_path = null;
 
+        let correct_position = 0;
+
         function getStateById(id)
         {
             for (let i = 0; i < states.length; i++) 
@@ -109,6 +111,13 @@
 
             const start_symbol = document.getElementById("start_symbol");
             start_symbol.style.display = 'none';
+
+            const input_string = document.getElementById("test");
+
+            input_string.addEventListener('input', function(event) {
+                correct_path = null;
+                correct_position = 0;
+            });
 
             function updateConnections(target_state)
             {
@@ -169,7 +178,6 @@
             function renderStates(){
             if(render)
             {
-                correct_path = null;
                 let flag = false;
                 for (let i = 0; i < states.length; i++) 
                 {
@@ -212,6 +220,8 @@
                 render = true;
                 if(event.button === 0 && disable_mouse != true)
                 {
+                    correct_path = null;
+                    correct_position = 0;
                     if(create_cooldown && mode == 1)
                     {
                         create_cooldown = false;
@@ -251,6 +261,8 @@
                 }
                 else if(disable_mouse != true)
                 {
+                    correct_path = null;
+                    correct_position = 0;
                     if(mode == 0)
                     {
                         const mouse_over = checkColision(event.clientX, event.clientY);
@@ -276,8 +288,10 @@
             });
 
             document.addEventListener('mouseup', (event) => {
-                if(mode == 2 && holding != null)
+                if(mode == 2 && holding != null && disable_mouse != true)
                 {
+                    correct_path = null;
+                    correct_position = 0;
                     const dest = checkColision(event.clientX, event.clientY);
                     if(dest != null)
                     {
@@ -306,8 +320,6 @@
             });
 
             document.addEventListener('mousemove', (event) => {
-                const mouse_pos = document.getElementById("mouse_pos");
-                mouse_pos.innerText = "X: " + event.clientX + "Y: " + event.clientY;
                 if(holding != null && mode  == 0)
                 {
                     holding.pos_x = event.clientX - 25;
@@ -374,7 +386,7 @@
             for (let i = 0; i < states.length; i++)
             {
                 const div = document.getElementById(states[i].name);
-                div.style.backgroundColor = 'rgb(253, 255, 120)';
+                div.style.backgroundColor = 'rgb(255, 255, 120)';
             }
         }
 
@@ -401,6 +413,8 @@
 
         function validate(state, test_string, position, path)
         {
+            path.push(state);
+
             if(position == test_string.length)
             {
                 if(state.cat == 1 || state.cat == 3)
@@ -415,10 +429,13 @@
 
             for (let i = 0; i < state.goto.length; i++)
             {
-                path.push(state);
                 if(state.goto[i][0] === test_string[position])
                 {
                     return validate(state.goto[i][1], test_string, position + 1, path);
+                }
+                else if(state.goto[i][0] == 'ε')
+                {
+                    return validate(state.goto[i][1], test_string, position, path);
                 }
             }
         }
@@ -458,7 +475,32 @@
 
         function advancePath()
         {
-
+            if(correct_path != null)
+            {
+                console.log(correct_position);
+                clearStateColor();
+                
+                if(correct_position == correct_path.length-1)
+                {
+                    const div = document.getElementById(correct_path[correct_position].name);
+                    div.style.backgroundColor = 'rgb(0, 255, 0)';
+                }
+                else if(correct_position == correct_path.length)
+                {
+                    correct_position = -1;
+                }
+                else
+                {
+                    const div = document.getElementById(correct_path[correct_position].name);
+                    div.style.backgroundColor = 'rgb(195, 195, 60)';
+                }
+                
+                correct_position += 1;
+            }
+            else
+            {
+                alert("Valide a string antes do passo a passo");
+            }
         }
     </script>
 </head>
@@ -470,10 +512,8 @@
         <button class="botao" type="button" onclick="removeMode()" >Remover</button>
         <input id="test" type="text" placeholder="String testada">
         <button type="button" onclick="validateString()" >validar</button>
+        <button type="button" onclick="advancePath()" >avançar passo</button>
     </div>
-
-    <div id="mouse_pos"></div>
-
     <div class="triangle-right" id="start_symbol"></div>
 </body>
 </html>
