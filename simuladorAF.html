@@ -90,17 +90,32 @@
             const new_div = document.createElement("div");
             new_div.className = "connection";
             document.body.appendChild(new_div);
-            new_div.style.backgroundColor = 'rgb(0, 0, 0)';
-            new_div.style.height = '3px';
-            new_div.style.width = Math.round(calcDistance(x1, y1, x2, y2)) + 'px';
             new_div.style.zIndex = '-1';
-            let deg = Math.atan2(y1-y2,x1-x2) * 180 / Math.PI + 180;
-            new_div.style.transformOrigin = '0 0';
 
-            new_div.style.transform = 'rotate('+deg+'deg)';
+            if(x1 == x2 && y1 == y2)
+            {
+                new_div.style.backgroundColor = 'rgb(255, 255, 255)';
+                new_div.style.height = '30px';
+                new_div.style.width = '40px';
+                new_div.style.borderStyle = "solid";
+                new_div.style.left = x1 + 5 + 'px';
+                new_div.style.top = y1 - 25 + 'px';
+            }
+            else
+            {
+                new_div.style.backgroundColor = 'rgb(0, 0, 0)';
+                new_div.style.height = '3px';
+                new_div.style.width = Math.round(calcDistance(x1, y1, x2, y2)) + 'px';
+                
+                let deg = Math.atan2(y1-y2,x1-x2) * 180 / Math.PI + 180;
+                new_div.style.transformOrigin = '0 0';
+                new_div.style.transform = 'rotate('+deg+'deg)';
 
-            new_div.style.left = x1 + 25 + 'px';
-            new_div.style.top = y1 + 25 + 'px';
+                new_div.style.left = x1 + 25 + 'px';
+                new_div.style.top = y1 + 25 + 'px';
+            }
+            
+            
 
             return new_div;
         }
@@ -136,7 +151,7 @@
                             line.style.width = Math.round(calcDistance(x1, y1, x2, y2)) + 'px';
                             const deg = Math.atan2(y1-y2,x1-x2) * 180 / Math.PI + 180;
                             line.style.transformOrigin = '0 0';
-
+                                
                             line.style.transform = 'rotate('+deg+'deg)';
 
                             line.style.left = x1 + 25 + 'px';
@@ -149,6 +164,7 @@
                         {
                             if(states[i].goto[j][1] === target_state)
                             {
+
                                 const line = document.getElementById(states[i].name+states[i].goto[j][0]+states[i].goto[j][1].name)
                                 const x1 = states[i].pos_x
                                 const y1 = states[i].pos_y
@@ -517,4 +533,3 @@
     <div class="triangle-right" id="start_symbol"></div>
 </body>
 </html>
-
