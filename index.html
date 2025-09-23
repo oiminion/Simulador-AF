@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Move Div with Mouse</title>
+    <title>Simulador AF</title>
     <style>
         body {
             height: 100vh;
@@ -17,7 +17,6 @@
             width: 50px;
             height: 50px;
             background-color: rgb(253, 255, 120);
-            border: 2px solid black;
             border-radius: 50%;
             pointer-events: none;
             justify-content: center;
@@ -27,6 +26,23 @@
         .botao {
             width: 100px;
         }
+
+        .triangle-right {
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-top: 25px solid transparent;
+            border-left: 25px solid #555;
+            border-bottom: 25px solid transparent;
+        }
+
+        .connection{
+            position: absolute;
+            display: flex;
+            background-color: rgb(0, 0, 0);
+            justify-content: center;
+            align-items: bottom;
+        }
     </style>
     <script>
         class STATE {
@@ -34,6 +50,7 @@
                 this.name = name;
                 this.pos_x = pos_x;
                 this.pos_y = pos_y;
+                this.cat = 0;//0 = normal, 1 = end, 2 = start 3 = start end
                 this.goto = [];
             }
         }
@@ -52,6 +69,8 @@
 
         let disable_mouse = false;
 
+        let correct_path = null;
+
         function getStateById(id)
         {
             for (let i = 0; i < states.length; i++) 
@@ -64,9 +83,94 @@
             return null;
         }
 
-        function renderStates(){
+        function drawLine(x1, y1, x2, y2)
+        {
+            const new_div = document.createElement("div");
+            new_div.className = "connection";
+            document.body.appendChild(new_div);
+            new_div.style.backgroundColor = 'rgb(0, 0, 0)';
+            new_div.style.height = '3px';
+            new_div.style.width = Math.round(calcDistance(x1, y1, x2, y2)) + 'px';
+            new_div.style.zIndex = '-1';
+            let deg = Math.atan2(y1-y2,x1-x2) * 180 / Math.PI + 180;
+            new_div.style.transformOrigin = '0 0';
+
+            new_div.style.transform = 'rotate('+deg+'deg)';
+
+            new_div.style.left = x1 + 25 + 'px';
+            new_div.style.top = y1 + 25 + 'px';
+
+            return new_div;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+
+            const input_area = document.getElementById("input_area");
+
+            const start_symbol = document.getElementById("start_symbol");
+            start_symbol.style.display = 'none';
+
+            function updateConnections(target_state)
+            {
+                const connections = document.querySelectorAll('.connection');
+                for (let i = 0; i < states.length; i++)
+                {
+                    if(states[i] === target_state)
+                    {
+                        for (let j = 0; j < states[i].goto.length; j++)
+                        {
+                            const line = document.getElementById(states[i].name+states[i].goto[j][0]+states[i].goto[j][1].name)
+                            const x1 = states[i].pos_x
+                            const y1 = states[i].pos_y
+                            const x2 = states[i].goto[j][1].pos_x
+                            const y2 = states[i].goto[j][1].pos_y
+                            line.style.width = Math.round(calcDistance(x1, y1, x2, y2)) + 'px';
+                            const deg = Math.atan2(y1-y2,x1-x2) * 180 / Math.PI + 180;
+                            line.style.transformOrigin = '0 0';
+
+                            line.style.transform = 'rotate('+deg+'deg)';
+
+                            line.style.left = x1 + 25 + 'px';
+                            line.style.top = y1 + 25 + 'px';
+                        }
+                    }
+                    else
+                    {
+                        for (let j = 0; j < states[i].goto.length; j++)
+                        {
+                            if(states[i].goto[j][1] === target_state)
+                            {
+                                const line = document.getElementById(states[i].name+states[i].goto[j][0]+states[i].goto[j][1].name)
+                                const x1 = states[i].pos_x
+                                const y1 = states[i].pos_y
+                                const x2 = states[i].goto[j][1].pos_x
+                                const y2 = states[i].goto[j][1].pos_y
+                                line.style.width = Math.round(calcDistance(x1, y1, x2, y2)) + 'px';
+                                const deg = Math.atan2(y1-y2,x1-x2) * 180 / Math.PI + 180;
+                                line.style.transformOrigin = '0 0';
+
+                                line.style.transform = 'rotate('+deg+'deg)';
+
+                                line.style.left = x1 + 25 + 'px';
+                                line.style.top = y1 + 25 + 'px';
+                            }
+                        }
+                    }
+                }
+            }
+
+            function moveStartSymbol(x, y)
+            {
+                start_symbol.style.display = 'block';
+                start_symbol.style.left = x - 25 + 'px';
+                start_symbol.style.top = y + 'px';
+            }
+
+            function renderStates(){
             if(render)
             {
+                correct_path = null;
+                let flag = false;
                 for (let i = 0; i < states.length; i++) 
                 {
                     let div = document.getElementById(states[i].name);
@@ -74,14 +178,35 @@
                     {
                         div.style.left = states[i].pos_x + 'px';
                         div.style.top = states[i].pos_y + 'px';
-                        console.log(div.id,div.style.Left,div.style.Top);
+
+                        if(states[i].cat == 1)
+                        {
+                            div.style.borderStyle = "double";
+                        }
+                        else if(states[i].cat == 2)
+                        {
+                            div.style.borderStyle = "solid";
+                            moveStartSymbol(states[i].pos_x, states[i].pos_y);
+                            flag = true;
+                        }
+                        else if(states[i].cat == 3)
+                        {
+                            div.style.borderStyle = "double";
+                            moveStartSymbol(states[i].pos_x, states[i].pos_y);
+                            flag = true;
+                        }
+                        else
+                        {
+                            div.style.borderStyle = "solid";
+                        }
                     }
+                }
+                if(flag == false)
+                {
+                    start_symbol.style.display = 'none';
                 }
             }
         }
-        document.addEventListener('DOMContentLoaded', function() {
-
-            const input_area = document.getElementById("input_area");
 
             document.addEventListener('mousedown', (event) => {
                 render = true;
@@ -98,8 +223,8 @@
                         new_div.id = new_state.name;
                         new_div.innerText = new_state.name;
                         document.body.appendChild(new_div);
-                        new_div.style.Left = new_state.pos_x + 'px';
-                        new_div.style.Top = new_state.pos_y + 'px';
+                        new_div.style.left = new_state.pos_x + 'px';
+                        new_div.style.top = new_state.pos_y + 'px';
 
                         stateID += 1;
                         states.push(new_state);
@@ -107,11 +232,41 @@
                     }
                     else if(mode == 0)
                     {
-                        const selected = checkColision(event.clientX, event.clientY);
-                        if(selected != null)
+                        holding = checkColision(event.clientX, event.clientY);
+                        if(holding != null)
                         {
-                            const div = document.getElementById(selected.name);
+                            const div = document.getElementById(holding.name);
                             div.style.backgroundColor = 'rgb(0, 255, 0)';
+                        }
+                    }
+                    else if(mode == 2)
+                    {
+                        holding = checkColision(event.clientX, event.clientY);
+                        if(holding != null)
+                        {
+                            const div = document.getElementById(holding.name);
+                            div.style.backgroundColor = 'rgb(0, 255, 0)';
+                        }
+                    }
+                }
+                else if(disable_mouse != true)
+                {
+                    if(mode == 0)
+                    {
+                        const mouse_over = checkColision(event.clientX, event.clientY);
+                        if(mouse_over != null)
+                        {
+                            mouse_over.cat += 1;
+                            if(mouse_over.cat >= 2)
+                            {
+                                const aux = mouse_over.cat;
+                                clearStateCat();
+                                mouse_over.cat = aux;
+                            }
+                            else if(mouse_over.cat > 3)
+                            {
+                                mouse_over.cat = 0;
+                            }
                         }
                     }
                 }
@@ -121,11 +276,45 @@
             });
 
             document.addEventListener('mouseup', (event) => {
+                if(mode == 2 && holding != null)
+                {
+                    const dest = checkColision(event.clientX, event.clientY);
+                    if(dest != null)
+                    {
+                        let character = prompt("Insira o caractere");
+                        if(character == "")
+                        {
+                            character = 'ε';
+                        }
+                        holding.goto.push([character,dest]);
+                        const line = drawLine(holding.pos_x, holding.pos_y, dest.pos_x, dest.pos_y);
+                        line.innerText = character;
+                        line.id = holding.name + character + dest.name;
+                    }
+                    holding = null;
+                    clearStateColor();
+                }
+
                 renderStates();
+
+                if(holding != null)
+                {
+                    holding = null;
+                    clearStateColor();
+                }
                 render = false;
             });
 
             document.addEventListener('mousemove', (event) => {
+                const mouse_pos = document.getElementById("mouse_pos");
+                mouse_pos.innerText = "X: " + event.clientX + "Y: " + event.clientY;
+                if(holding != null && mode  == 0)
+                {
+                    holding.pos_x = event.clientX - 25;
+                    holding.pos_y = event.clientY - 25;
+
+                    updateConnections(holding);
+                }
                 renderStates();
             });
 
@@ -158,6 +347,21 @@
             mode = 3;
         }
 
+        function clearStateCat()
+        {
+            for (let i = 0; i < states.length; i++)
+            {
+                if(states[i].cat == 2)
+                {
+                    states[i].cat = 0;
+                }
+                else if(states[i].cat == 3)
+                {
+                    states[i].cat = 1;
+                }
+            }
+        }
+
         function calcDistance(x1, y1, x2, y2)
         {
             const dx = x1 - x2;
@@ -165,29 +369,96 @@
             return Math.sqrt(dx*dx + dy*dy);
         }
 
+        function clearStateColor()
+        {
+            for (let i = 0; i < states.length; i++)
+            {
+                const div = document.getElementById(states[i].name);
+                div.style.backgroundColor = 'rgb(253, 255, 120)';
+            }
+        }
+
         function checkColision(x, y)
         {
-            alert(x);
-            alert(y);
             let selected_state = null;
             for (let i = 0; i < states.length; i++)
             {
-                const dist = calcDistance(states[i].pos_x, states[i].pos_y, x, y);
+                const dist = calcDistance(states[i].pos_x + 25, states[i].pos_y + 25, x, y);
                 if(dist <= 25)
                 {
-                    alert("AAA");
                     if(selected_state == null)
                     {
                         selected_state = states[i];
                     }
-                    else if(dist < calcDistance(selected_state.pos_x, selected_state.pos_y, x, y))
+                    else if(dist < calcDistance(selected_state.pos_x + 25, selected_state.pos_y + 25, x, y))
                     {
                         selected_state = states[i];
                     }
                 }
             }
-            alert(selected_state);
             return selected_state;
+        }
+
+        function validate(state, test_string, position, path)
+        {
+            if(position == test_string.length)
+            {
+                if(state.cat == 1 || state.cat == 3)
+                {
+                    return path;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+
+            for (let i = 0; i < state.goto.length; i++)
+            {
+                path.push(state);
+                if(state.goto[i][0] === test_string[position])
+                {
+                    return validate(state.goto[i][1], test_string, position + 1, path);
+                }
+            }
+        }
+
+        function getStart()
+        {
+            for (let i = 0; i < states.length; i++)
+            {
+                if(states[i].cat >= 2)
+                {
+                    return states[i];
+                }
+            }
+        }
+
+        function validateString()
+        {
+            const test = document.getElementById("test");
+        
+            const test_string = String(test.value);
+
+            const start = getStart();
+
+            const result = validate(start, test_string, 0, []);
+
+            if(result != null)
+            {
+                alert("A palavra inserida é válida");
+            }
+            else
+            {
+                alert("A palavra inserida é inválida");
+            }
+
+            correct_path = result;
+        }
+
+        function advancePath()
+        {
+
         }
     </script>
 </head>
@@ -197,6 +468,12 @@
         <button class="botao" type="button" onclick="createMode()" >Criar</button>
         <button class="botao" type="button" onclick="connectMode()" >Conectar</button>
         <button class="botao" type="button" onclick="removeMode()" >Remover</button>
+        <input id="test" type="text" placeholder="String testada">
+        <button type="button" onclick="validateString()" >validar</button>
     </div>
+
+    <div id="mouse_pos"></div>
+
+    <div class="triangle-right" id="start_symbol"></div>
 </body>
 </html>
