@@ -98,13 +98,13 @@ class STATE {
                         {
                             if(states[i] === states[i].goto[j][1])
                             {
-                                const line = document.getElementById(states[i].name+states[i].goto[j][0]+states[i].goto[j][1].name);
+                                const line = document.getElementById(states[i].name+states[i].goto[j][1].name);
                                 line.style.left = x - 20 + 'px';
                                 line.style.top = y - 50 + 'px';
                             }
                             else
                             {
-                                const line = document.getElementById(states[i].name+states[i].goto[j][0]+states[i].goto[j][1].name);
+                                const line = document.getElementById(states[i].name+states[i].goto[j][1].name);
                                 const x1 = states[i].pos_x;
                                 const y1 = states[i].pos_y;
                                 const x2 = states[i].goto[j][1].pos_x;
@@ -127,7 +127,7 @@ class STATE {
                             if(states[i].goto[j][1] === target_state)
                             {
 
-                                const line = document.getElementById(states[i].name+states[i].goto[j][0]+states[i].goto[j][1].name)
+                                const line = document.getElementById(states[i].name+states[i].goto[j][1].name)
                                 const x1 = states[i].pos_x
                                 const y1 = states[i].pos_y
                                 const x2 = states[i].goto[j][1].pos_x
@@ -279,9 +279,15 @@ class STATE {
                             character = 'ε';
                         }
                         holding.goto.push([character,dest]);
-                        const line = drawLine(holding.pos_x, holding.pos_y, dest.pos_x, dest.pos_y);
-                        line.innerText = character;
-                        line.id = holding.name + character + dest.name;
+                        let flag = false;
+                        const lines = document.getElementsByClassName('connection');
+                        let line = document.getElementById(holding.name + dest.name);
+                        if(line == null)
+                        {
+                            line = drawLine(holding.pos_x, holding.pos_y, dest.pos_x, dest.pos_y);
+                        }
+                        line.innerHTML = line.innerHTML + character + "<br>";
+                        line.id = holding.name + dest.name;
                     }
                     holding = null;
                     clearStateColor();
