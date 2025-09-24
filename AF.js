@@ -1,0 +1,482 @@
+class STATE {
+            constructor(name, pos_x, pos_y) {
+                this.name = name;
+                this.pos_x = pos_x;
+                this.pos_y = pos_y;
+                this.cat = 0;//0 = normal, 1 = end, 2 = start 3 = start end
+                this.goto = [];
+            }
+        }
+
+        let stateID = 0;
+
+        let states = [];
+
+        let render = false;
+
+        let create_cooldown = true;
+
+        let mode = 0;//0 = select, 1 = create, 2 = connect, 3 = remove 
+
+        let holding = null;
+
+        let disable_mouse = false;
+
+        let correct_path = null;
+
+        let correct_position = 0;
+
+        function getStateById(id)
+        {
+            for (let i = 0; i < states.length; i++) 
+            {
+                if(states[i].name === id)
+                {
+                    return states[i];
+                }
+            }
+            return null;
+        }
+
+        function drawLine(x1, y1, x2, y2)
+        {
+            const new_div = document.createElement("div");
+            new_div.className = "connection";
+            document.body.appendChild(new_div);
+            new_div.style.zIndex = '-1';
+
+            if(x1 == x2 && y1 == y2)
+            {
+                new_div.style.backgroundColor = 'rgb(255, 255, 255)';
+                new_div.style.height = '30px';
+                new_div.style.width = '40px';
+                new_div.style.borderStyle = "solid";
+                new_div.style.left = x1 + 5 + 'px';
+                new_div.style.top = y1 - 25 + 'px';
+            }
+            else
+            {
+                new_div.style.backgroundColor = 'rgb(0, 0, 0)';
+                new_div.style.height = '3px';
+                new_div.style.width = Math.round(calcDistance(x1, y1, x2, y2)) + 'px';
+                
+                let deg = Math.atan2(y1-y2,x1-x2) * 180 / Math.PI + 180;
+                new_div.style.transformOrigin = '0 0';
+                new_div.style.transform = 'rotate('+deg+'deg)';
+
+                new_div.style.left = x1 + 25 + 'px';
+                new_div.style.top = y1 + 25 + 'px';
+            }
+            
+            
+
+            return new_div;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+
+            const input_area = document.getElementById("input_area");
+
+            const start_symbol = document.getElementById("start_symbol");
+            start_symbol.style.display = 'none';
+
+            const input_string = document.getElementById("test");
+
+            input_string.addEventListener('input', function(event) {
+                correct_path = null;
+                correct_position = 0;
+            });
+
+            function updateConnections(target_state, x, y)
+            {
+                const connections = document.querySelectorAll('.connection');
+                for (let i = 0; i < states.length; i++)
+                {
+                    if(states[i] === target_state)
+                    {
+                        for (let j = 0; j < states[i].goto.length; j++)
+                        {
+                            if(states[i] === states[i].goto[j][1])
+                            {
+                                const line = document.getElementById(states[i].name+states[i].goto[j][0]+states[i].goto[j][1].name);
+                                line.style.left = x - 20 + 'px';
+                                line.style.top = y - 50 + 'px';
+                            }
+                            else
+                            {
+                                const line = document.getElementById(states[i].name+states[i].goto[j][0]+states[i].goto[j][1].name);
+                                const x1 = states[i].pos_x;
+                                const y1 = states[i].pos_y;
+                                const x2 = states[i].goto[j][1].pos_x;
+                                const y2 = states[i].goto[j][1].pos_y;
+                                line.style.width = Math.round(calcDistance(x1, y1, x2, y2)) + 'px';
+                                const deg = Math.atan2(y1-y2,x1-x2) * 180 / Math.PI + 180;
+                                line.style.transformOrigin = '0 0';
+                                    
+                                line.style.transform = 'rotate('+deg+'deg)';
+
+                                line.style.left = x1 + 25 + 'px';
+                                line.style.top = y1 + 25 + 'px';
+                            }
+                        }
+                    }
+                    else
+                    {
+                        for (let j = 0; j < states[i].goto.length; j++)
+                        {
+                            if(states[i].goto[j][1] === target_state)
+                            {
+
+                                const line = document.getElementById(states[i].name+states[i].goto[j][0]+states[i].goto[j][1].name)
+                                const x1 = states[i].pos_x
+                                const y1 = states[i].pos_y
+                                const x2 = states[i].goto[j][1].pos_x
+                                const y2 = states[i].goto[j][1].pos_y
+                                line.style.width = Math.round(calcDistance(x1, y1, x2, y2)) + 'px';
+                                const deg = Math.atan2(y1-y2,x1-x2) * 180 / Math.PI + 180;
+                                line.style.transformOrigin = '0 0';
+
+                                line.style.transform = 'rotate('+deg+'deg)';
+
+                                line.style.left = x1 + 25 + 'px';
+                                line.style.top = y1 + 25 + 'px';
+                            }
+                        }
+                    }
+                }
+            }
+
+            function moveStartSymbol(x, y)
+            {
+                start_symbol.style.display = 'block';
+                start_symbol.style.left = x - 25 + 'px';
+                start_symbol.style.top = y + 'px';
+            }
+
+            function renderStates(){
+            if(render)
+            {
+                let flag = false;
+                for (let i = 0; i < states.length; i++) 
+                {
+                    let div = document.getElementById(states[i].name);
+                    if(div != null)
+                    {
+                        div.style.left = states[i].pos_x + 'px';
+                        div.style.top = states[i].pos_y + 'px';
+
+                        if(states[i].cat == 1)
+                        {
+                            div.style.borderStyle = "double";
+                        }
+                        else if(states[i].cat == 2)
+                        {
+                            div.style.borderStyle = "solid";
+                            moveStartSymbol(states[i].pos_x, states[i].pos_y);
+                            flag = true;
+                        }
+                        else if(states[i].cat == 3)
+                        {
+                            div.style.borderStyle = "double";
+                            moveStartSymbol(states[i].pos_x, states[i].pos_y);
+                            flag = true;
+                        }
+                        else
+                        {
+                            div.style.borderStyle = "solid";
+                        }
+                    }
+                }
+                if(flag == false)
+                {
+                    start_symbol.style.display = 'none';
+                }
+            }
+        }
+
+            document.addEventListener('mousedown', (event) => {
+                render = true;
+                if(event.button === 0 && disable_mouse != true)
+                {
+                    correct_path = null;
+                    correct_position = 0;
+                    if(create_cooldown && mode == 1)
+                    {
+                        create_cooldown = false;
+
+                        const new_state = new STATE("q"+stateID, event.clientX - 25, event.clientY - 25);
+
+                        const new_div = document.createElement("div");
+                        new_div.className = "state";
+                        new_div.id = new_state.name;
+                        new_div.innerText = new_state.name;
+                        document.body.appendChild(new_div);
+                        new_div.style.left = new_state.pos_x + 'px';
+                        new_div.style.top = new_state.pos_y + 'px';
+
+                        stateID += 1;
+                        states.push(new_state);
+                        console.log(states);
+                    }
+                    else if(mode == 0)
+                    {
+                        holding = checkColision(event.clientX, event.clientY);
+                        if(holding != null)
+                        {
+                            const div = document.getElementById(holding.name);
+                            div.style.backgroundColor = 'rgb(0, 255, 0)';
+                        }
+                    }
+                    else if(mode == 2)
+                    {
+                        holding = checkColision(event.clientX, event.clientY);
+                        if(holding != null)
+                        {
+                            const div = document.getElementById(holding.name);
+                            div.style.backgroundColor = 'rgb(0, 255, 0)';
+                        }
+                    }
+                }
+                else if(disable_mouse != true)
+                {
+                    correct_path = null;
+                    correct_position = 0;
+                    if(mode == 0)
+                    {
+                        const mouse_over = checkColision(event.clientX, event.clientY);
+                        if(mouse_over != null)
+                        {
+                            mouse_over.cat += 1;
+                            if(mouse_over.cat >= 2)
+                            {
+                                const aux = mouse_over.cat;
+                                clearStateCat();
+                                mouse_over.cat = aux;
+                            }
+                            else if(mouse_over.cat > 3)
+                            {
+                                mouse_over.cat = 0;
+                            }
+                        }
+                    }
+                }
+                
+                renderStates();
+                setTimeout(create_cooldown = true, 1000);
+            });
+
+            document.addEventListener('mouseup', (event) => {
+                if(mode == 2 && holding != null && disable_mouse != true)
+                {
+                    correct_path = null;
+                    correct_position = 0;
+                    const dest = checkColision(event.clientX, event.clientY);
+                    if(dest != null)
+                    {
+                        let character = prompt("Insira o caractere");
+                        if(character == "")
+                        {
+                            character = 'ε';
+                        }
+                        holding.goto.push([character,dest]);
+                        const line = drawLine(holding.pos_x, holding.pos_y, dest.pos_x, dest.pos_y);
+                        line.innerText = character;
+                        line.id = holding.name + character + dest.name;
+                    }
+                    holding = null;
+                    clearStateColor();
+                }
+
+                renderStates();
+
+                if(holding != null)
+                {
+                    holding = null;
+                    clearStateColor();
+                }
+                render = false;
+            });
+
+            document.addEventListener('mousemove', (event) => {
+                if(holding != null && mode  == 0)
+                {
+                    holding.pos_x = event.clientX - 25;
+                    holding.pos_y = event.clientY - 25;
+
+                    updateConnections(holding, event.clientX, event.clientY);
+                }
+                renderStates();
+            });
+
+            input_area.addEventListener('mouseover', (event) => {
+                disable_mouse = true;
+            });
+
+            input_area.addEventListener('mouseout', (event) => {
+                disable_mouse = false;
+            });
+        });
+
+        function selectMode()
+        {
+            mode = 0;
+        }
+
+        function createMode()
+        {
+            mode = 1;
+        }
+        
+        function connectMode()
+        {
+            mode = 2;
+        }
+
+        function removeMode()
+        {
+            mode = 3;
+        }
+
+        function clearStateCat()
+        {
+            for (let i = 0; i < states.length; i++)
+            {
+                if(states[i].cat == 2)
+                {
+                    states[i].cat = 0;
+                }
+                else if(states[i].cat == 3)
+                {
+                    states[i].cat = 1;
+                }
+            }
+        }
+
+        function calcDistance(x1, y1, x2, y2)
+        {
+            const dx = x1 - x2;
+            const dy = y1 - y2;
+            return Math.sqrt(dx*dx + dy*dy);
+        }
+
+        function clearStateColor()
+        {
+            for (let i = 0; i < states.length; i++)
+            {
+                const div = document.getElementById(states[i].name);
+                div.style.backgroundColor = 'rgb(255, 255, 120)';
+            }
+        }
+
+        function checkColision(x, y)
+        {
+            let selected_state = null;
+            for (let i = 0; i < states.length; i++)
+            {
+                const dist = calcDistance(states[i].pos_x + 25, states[i].pos_y + 25, x, y);
+                if(dist <= 25)
+                {
+                    if(selected_state == null)
+                    {
+                        selected_state = states[i];
+                    }
+                    else if(dist < calcDistance(selected_state.pos_x + 25, selected_state.pos_y + 25, x, y))
+                    {
+                        selected_state = states[i];
+                    }
+                }
+            }
+            return selected_state;
+        }
+
+        function validate(state, test_string, position, path)
+        {
+            path.push(state);
+
+            if(position == test_string.length)
+            {
+                if(state.cat == 1 || state.cat == 3)
+                {
+                    return path;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+
+            for (let i = 0; i < state.goto.length; i++)
+            {
+                if(state.goto[i][0] === test_string[position])
+                {
+                    return validate(state.goto[i][1], test_string, position + 1, path);
+                }
+                else if(state.goto[i][0] == 'ε')
+                {
+                    return validate(state.goto[i][1], test_string, position, path);
+                }
+            }
+        }
+
+        function getStart()
+        {
+            for (let i = 0; i < states.length; i++)
+            {
+                if(states[i].cat >= 2)
+                {
+                    return states[i];
+                }
+            }
+        }
+
+        function validateString()
+        {
+            const test = document.getElementById("test");
+        
+            const test_string = String(test.value);
+
+            const start = getStart();
+
+            const result = validate(start, test_string, 0, []);
+
+            if(result != null)
+            {
+                alert("A palavra inserida é válida");
+            }
+            else
+            {
+                alert("A palavra inserida é inválida");
+            }
+
+            correct_path = result;
+        }
+
+        function advancePath()
+        {
+            if(correct_path != null)
+            {
+                console.log(correct_position);
+                clearStateColor();
+                
+                if(correct_position == correct_path.length-1)
+                {
+                    const div = document.getElementById(correct_path[correct_position].name);
+                    div.style.backgroundColor = 'rgb(0, 255, 0)';
+                }
+                else if(correct_position == correct_path.length)
+                {
+                    correct_position = -1;
+                }
+                else
+                {
+                    const div = document.getElementById(correct_path[correct_position].name);
+                    div.style.backgroundColor = 'rgb(195, 195, 60)';
+                }
+                
+                correct_position += 1;
+            }
+            else
+            {
+                alert("Valide a string antes do passo a passo");
+            }
+        }
