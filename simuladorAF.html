@@ -134,7 +134,7 @@
                 correct_position = 0;
             });
 
-            function updateConnections(target_state)
+            function updateConnections(target_state, x, y)
             {
                 const connections = document.querySelectorAll('.connection');
                 for (let i = 0; i < states.length; i++)
@@ -143,19 +143,28 @@
                     {
                         for (let j = 0; j < states[i].goto.length; j++)
                         {
-                            const line = document.getElementById(states[i].name+states[i].goto[j][0]+states[i].goto[j][1].name)
-                            const x1 = states[i].pos_x
-                            const y1 = states[i].pos_y
-                            const x2 = states[i].goto[j][1].pos_x
-                            const y2 = states[i].goto[j][1].pos_y
-                            line.style.width = Math.round(calcDistance(x1, y1, x2, y2)) + 'px';
-                            const deg = Math.atan2(y1-y2,x1-x2) * 180 / Math.PI + 180;
-                            line.style.transformOrigin = '0 0';
-                                
-                            line.style.transform = 'rotate('+deg+'deg)';
+                            if(states[i] === states[i].goto[j][1])
+                            {
+                                const line = document.getElementById(states[i].name+states[i].goto[j][0]+states[i].goto[j][1].name);
+                                line.style.left = x - 20 + 'px';
+                                line.style.top = y - 50 + 'px';
+                            }
+                            else
+                            {
+                                const line = document.getElementById(states[i].name+states[i].goto[j][0]+states[i].goto[j][1].name);
+                                const x1 = states[i].pos_x;
+                                const y1 = states[i].pos_y;
+                                const x2 = states[i].goto[j][1].pos_x;
+                                const y2 = states[i].goto[j][1].pos_y;
+                                line.style.width = Math.round(calcDistance(x1, y1, x2, y2)) + 'px';
+                                const deg = Math.atan2(y1-y2,x1-x2) * 180 / Math.PI + 180;
+                                line.style.transformOrigin = '0 0';
+                                    
+                                line.style.transform = 'rotate('+deg+'deg)';
 
-                            line.style.left = x1 + 25 + 'px';
-                            line.style.top = y1 + 25 + 'px';
+                                line.style.left = x1 + 25 + 'px';
+                                line.style.top = y1 + 25 + 'px';
+                            }
                         }
                     }
                     else
@@ -341,7 +350,7 @@
                     holding.pos_x = event.clientX - 25;
                     holding.pos_y = event.clientY - 25;
 
-                    updateConnections(holding);
+                    updateConnections(holding, event.clientX, event.clientY);
                 }
                 renderStates();
             });
